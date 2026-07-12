@@ -308,7 +308,21 @@
     return false;
   }
 
-  function forward(){ if (!nextStep()) show(cur+1); }
+  function nextQueued(){
+    var els = slides[cur].querySelectorAll('.sent .w[data-r], .eqcard, .magic-btn');
+    for (var i = 0; i < els.length; i++){
+      var el = els[i];
+      if (el.classList.contains('w')) {
+        if (!/\bhit-/.test(el.className)) { el.click(); return true; }
+      } else if (el.classList.contains('eqcard')) {
+        if (!el.classList.contains('open')) { el.click(); return true; }
+      } else {
+        if (el.textContent.indexOf('되돌리기') === -1) { el.click(); return true; }
+      }
+    }
+    return false;
+  }
+  function forward(){ if (!nextQueued()) { if (!nextStep()) show(cur+1); } }
   function back(){ show(cur-1); }
 
   document.addEventListener('keydown', function(e){
