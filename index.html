@@ -111,6 +111,10 @@
 
   /* 촬영용 초점 고정 테두리 */
   #focus-frame { position:fixed; inset:0; border:14px solid #3A5BB8; pointer-events:none; z-index:200; }
+
+  /* 단어 단위 내려오기(PPT 스타일) */
+  .pw { display:inline-block; opacity:0; transform:translateY(-0.6em); transition:opacity .28s ease, transform .28s ease; text-decoration:inherit; }
+  .pw.in { opacity:1; transform:none; }
 </style>
 </head>
 <body>
@@ -384,6 +388,70 @@
       });
     });
   });
+})();
+</script>
+<script>
+(function(){
+  var WORD_DELAY = 65; // ms, 단어 사이 간격
+
+  // 1) .slide 안 모든 텍스트를 단어 span으로 감싸기
+  document.querySelectorAll('.slide').forEach(function(slide){
+    var walker = document.createTreeWalker(slide, NodeFilter.SHOW_TEXT, null);
+    var nodes = [];
+    while (walker.nextNode()) {
+      if (walker.currentNode.nodeValue.trim()) nodes.push(walker.currentNode);
+    }
+    nodes.forEach(function(tn){
+      var frag = document.createDocumentFragment();
+      tn.nodeValue.split(/(\s+)/).forEach(function(tok){
+        if (!tok) return;
+        if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); return; }
+        var sp = document.createElement('span');
+        sp.className = 'pw';
+        sp.textContent = tok;
+        frag.appendChild(sp);
+      });
+      tn.parentNode.replaceChild(frag, tn);
+    });
+  });
+
+  // 숨김 컨테이너 안의 단어는 컨테이너가 공개될 때 애니메이션
+  function isHidden(el){
+    if (el.closest('.step') && !el.closest('.step').classList.contains('shown')) return true;
+    var exp = el.closest('.quiz-exp'); if (exp && !exp.classList.contains('shown')) return true;
+    var huh = el.closest('.huh'); if (huh && !huh.classList.contains('shown')) return true;
+    var v = el.closest('.verdict'); if (v) { var card = v.closest('.eqcard'); if (card && !card.classList.contains('open')) return true; }
+    return false;
+  }
+
+  function animateWords(container){
+    var list = [];
+    container.querySelectorAll('.pw:not(.in)').forEach(function(sp){
+      if (!isHidden(sp)) list.push(sp);
+    });
+    list.forEach(function(sp, i){
+      setTimeout(function(){ sp.classList.add('in'); }, i * WORD_DELAY);
+    });
+  }
+
+  // 2) 슬라이드 진입·스텝 공개·해설/판정 공개 시 자동 재생
+  var obs = new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      var el = m.target;
+      if (el.classList.contains('slide') && el.classList.contains('active')) animateWords(el);
+      else if (el.classList.contains('step') && el.classList.contains('shown')) animateWords(el);
+      else if (el.classList.contains('quiz-exp') && el.classList.contains('shown')) animateWords(el);
+      else if (el.classList.contains('huh') && el.classList.contains('shown')) animateWords(el);
+      else if (el.classList.contains('eqcard') && el.classList.contains('open')) animateWords(el);
+    });
+  });
+  document.querySelectorAll('.slide, .step, .quiz-exp, .huh, .eqcard').forEach(function(el){
+    obs.observe(el, { attributes:true, attributeFilter:['class'] });
+  });
+
+  // 첫 슬라이드 재생
+  var first = document.querySelector('.slide.active');
+  if (first) animateWords(first);
 })();
 </script>
 </body>
