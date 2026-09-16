@@ -454,5 +454,16 @@
   if (first) animateWords(first);
 })();
 </script>
+<script>
+(function(){
+  // 86인치 전자칠판 등 어떤 해상도에서도 1920x1080 구도를 꽉 차게 확대/축소
+  function fit(){
+    var z = Math.min(window.innerWidth/1920, window.innerHeight/1080);
+    document.body.style.zoom = z;
+  }
+  window.addEventListener('resize', fit);
+  fit();
+})();
+</script>
 </body>
 </html>
